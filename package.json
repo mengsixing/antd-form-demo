@@ -1,0 +1,28 @@
+{
+  "name": "antd-form-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yhlben/antd-form-demo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yhlben/antd-form-demo/issues"
+  },
+  "homepage": "https://github.com/yhlben/antd-form-demo#readme",
+  "devDependencies": {
+    "parcel-bundler": "^1.7.0"
+  },
+  "dependencies": {
+    "antd": "^3.4.1",
+    "react": ">=16.0.0",
+    "react-dom": ">=16.0.0"
+  }
+}
