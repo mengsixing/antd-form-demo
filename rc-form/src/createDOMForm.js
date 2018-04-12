@@ -98,6 +98,10 @@ const mixin = {
 };
 
 function createDOMForm(option) {
+  // option:
+  // fieldNameProp: 'id',
+  // fieldMetaProp: data-__meta,
+  // fieldDataProp: data-__field,
   return createBaseForm({
     ...option,
   }, [mixin]);

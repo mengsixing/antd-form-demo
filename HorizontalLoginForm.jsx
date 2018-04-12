@@ -28,7 +28,6 @@ class HorizontalLoginForm extends React.Component {
   render() {
     const { getFieldDecorator, getFieldsError, getFieldError, isFieldTouched } = this.props.form;
 
-    // Only show error after a field is touched.
     const userNameError = isFieldTouched('userName') && getFieldError('userName');
     const passwordError = isFieldTouched('password') && getFieldError('password');
     return (
@@ -67,6 +66,8 @@ class HorizontalLoginForm extends React.Component {
   }
 }
 
+//Form.create()  ->function
+//function(Form,HorizontalLoginForm)
 const WrappedHorizontalLoginForm = Form.create()(HorizontalLoginForm);
 
 export default WrappedHorizontalLoginForm;

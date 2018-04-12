@@ -20,6 +20,10 @@ import {
 const DEFAULT_TRIGGER = 'onChange';
 
 function createBaseForm(option = {}, mixins = []) {
+  // option:
+  // fieldNameProp: 'id',
+  // fieldMetaProp: data-__meta,
+  // fieldDataProp: data-__field,
   const {
     validateMessages,
     onFieldsChange,
@@ -516,11 +520,12 @@ function createBaseForm(option = {}, mixins = []) {
           ...formProps,
           ...restProps,
         });
+        //把form属性挂在到WrappedComponent属性上
         return <WrappedComponent {...props} />;
       },
     });
 
-    //Form组件包裹WrappedComponent组件
+    //复制静态属性
     return argumentContainer(Form, WrappedComponent);
   };
 }

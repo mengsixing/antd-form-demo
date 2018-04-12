@@ -1,22 +1,19 @@
 import React from 'react';
-import hoistStatics from 'hoist-non-react-statics';
+import MyForm from  './src/Form'
 
-class Form extends React.Components{
+
+
+class Test extends React.Component {
   render(){
+    console.log(this.props);
     return (
-      <div>
-        <h1>title</h1>
-      </div>
+      <MyForm>
+        <div>
+          <div>form item</div>
+        </div>
+      </MyForm>
     )
   }
 }
 
-class FormItem extends React.Components{
-  render(){
-    return (
-      <div>
-        <div>form item</div>
-      </div>
-    )
-  }
-}
+export default MyForm.create()(Test);

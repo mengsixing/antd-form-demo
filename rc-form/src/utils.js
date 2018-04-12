@@ -51,6 +51,7 @@ export function treeTraverse(path = '', tree, isLeafNode, errorMessage, callback
   }
 }
 
+//设置字段
 export function flattenFields(maybeNestedFields, isLeafNode, errorMessage) {
   const fields = {};
   treeTraverse(undefined, maybeNestedFields, isLeafNode, errorMessage, (path, node) => {
