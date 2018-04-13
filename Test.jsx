@@ -1,5 +1,5 @@
 import React from 'react';
-import MyForm from  './src/Form'
+import MyForm from  './src/NewForm'
 
 
 

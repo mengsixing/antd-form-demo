@@ -5,7 +5,7 @@ import createDOMForm from 'rc-form/lib/createDOMForm';
 import createFormField from 'rc-form/lib/createFormField';
 import PureRenderMixin from 'rc-util/lib/PureRenderMixin';
 import omit from 'omit.js';
-import warning from '../_util/warning';
+var warning=console.warn;
 import FormItem from './FormItem';
 import { FIELD_META_PROP, FIELD_DATA_PROP } from './constants';
 

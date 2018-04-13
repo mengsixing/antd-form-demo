@@ -42,6 +42,11 @@ class MyForm extends React.Component{
           };
         },
         render() {
+          const { wrappedComponentRef, ...restProps } = this.props;
+          const formProps = {
+            form: this.getForm(),
+            ...restProps
+          };
           var props={form:this.getForm()};
           return <WrappedComponent {...props} />;
         },

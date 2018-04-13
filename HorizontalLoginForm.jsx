@@ -1,6 +1,7 @@
 import React from 'react';
 import 'antd/dist/antd.css';
-import { Form, Icon, Input, Button } from 'antd';
+import {  Icon, Input, Button } from 'antd';
+import {Form} from './antd-form/Form';
 const FormItem = Form.Item;
 
 

@@ -18,7 +18,8 @@
   },
   "homepage": "https://github.com/yhlben/antd-form-demo#readme",
   "devDependencies": {
-    "parcel-bundler": "^1.7.0"
+    "parcel-bundler": "^1.7.0",
+    "typescript": "^2.8.1"
   },
   "dependencies": {
     "antd": "^3.4.1",
