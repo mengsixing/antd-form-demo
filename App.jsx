@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { createForm } from './rc-form';
+// import { createForm } from './rc-form';
+import { createForm } from './src';
 
 class Form extends React.Component {
   constructor(){

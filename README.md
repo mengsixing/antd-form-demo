@@ -30,6 +30,7 @@ getFieldDecorator需要传递如下参数：
 * 字段名
 * 字段描述信息，如验证信息rules
 * 存储字段相关信息：fieldsStore[字段名]={rules：{},value:{},onChange(){}}
+* onChange事件会自动触发验证条件。
 * 返回一个高阶函数，需要传递input进行绑定。
 
 ## 4、传入input组件
