@@ -6,6 +6,7 @@ import {
   startsWith,
 } from './utils';
 
+
 function partOf(a, b) {
   return b.indexOf(a) === 0 && ['.', '['].indexOf(b[a.length]) !== -1;
 }
