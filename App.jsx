@@ -54,7 +54,7 @@ class Form extends React.Component {
           {(getFieldError('name') || []).join(', ')}
         </div>
         <button>Submit</button>
-        <button onClick={this.xxx} type="button">button</button>
+        <button onClick={this.xxx} type="button">button3</button>
       </form>
     );
   }

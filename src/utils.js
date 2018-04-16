@@ -156,7 +156,7 @@ export function hasRules(validate) {
   return false;
 }
 
-// 判断是否从字符串开头是否为prefix
+// 判断是否从字符串开头是否为prefix.
 export function startsWith(str, prefix) {
   return str.lastIndexOf(prefix, 0) === 0;
 }
