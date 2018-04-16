@@ -5,7 +5,6 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import createFieldsStore from './createFieldsStore';
 import {
-  argumentContainer,
   identity,
   normalizeValidateRules,
   getValidateTriggers,
@@ -26,10 +25,9 @@ export default function createForm(option = {}, mixins = []) {
     onFieldsChange,
     onValuesChange,
     mapProps = identity,
-    mapPropsToFields,
-    fieldNameProp,
-    fieldMetaProp,
-    fieldDataProp,
+    fieldNameProp, //存放name的字段名
+    fieldMetaProp, //默认存放fieldsMeta.fieldsMeta中
+    fieldDataProp, //存放getField数据的字段名
     formPropName = 'form',
     // @deprecated
     withRef,
@@ -71,7 +69,6 @@ export default function createForm(option = {}, mixins = []) {
       }
 
       onCollectCommon(name, action, args) {
-        console.log('change事件调用的声明？');
         const fieldMeta = this.fieldsStore.getFieldMeta(name);
         if (fieldMeta[action]) {
           fieldMeta[action](...args);
@@ -120,6 +117,7 @@ export default function createForm(option = {}, mixins = []) {
         });
       }
 
+      //获取缓存中的事件,避免重复绑定事件
       getCacheBind(name, action, fn) {
         if (!this.cachedBind[name]) {
           this.cachedBind[name] = {};
@@ -143,27 +141,17 @@ export default function createForm(option = {}, mixins = []) {
 
       getFieldDecorator(name, fieldOption) {
         const props = this.getFieldProps(name, fieldOption);
-        console.log(props);
+        //props: {value: "", ref: ƒ, onChange: ƒ}
         return (fieldElem) => {
           const fieldMeta = this.fieldsStore.getFieldMeta(name);
+          //  fieldMeta
+          //  {"initialValue":"",
+          //  "name":"name2",
+          //  "trigger":"onChange",
+          //  "valuePropName":"value",
+          //  "validate":[{"trigger":["onChange"],"rules":[{"required":true,"message":"What's your name?"}]}],
+          //  "rules":[{"required":true,"message":"What's your name?"}]}
           const originalProps = fieldElem.props;
-          if (process.env.NODE_ENV !== 'production') {
-            const valuePropName = fieldMeta.valuePropName;
-            warning(
-              !(valuePropName in originalProps),
-              `\`getFieldDecorator\` will override \`${valuePropName}\`, ` +
-              `so please don't set \`${valuePropName}\` directly ` +
-              `and use \`setFieldsValue\` to set it.`
-            );
-            const defaultValuePropName =
-              `default${valuePropName[0].toUpperCase()}${valuePropName.slice(1)}`;
-            warning(
-              !(defaultValuePropName in originalProps),
-              `\`${defaultValuePropName}\` is invalid ` +
-              `for \`getFieldDecorator\` will set \`${valuePropName}\`,` +
-              ` please use \`option.initialValue\` instead.`
-            );
-          }
           fieldMeta.originalProps = originalProps;
           fieldMeta.ref = fieldElem.ref;
           return React.cloneElement(fieldElem, {
@@ -176,16 +164,6 @@ export default function createForm(option = {}, mixins = []) {
       getFieldProps(name, usersFieldOption = {}) {
         if (!name) {
           throw new Error('Must call `getFieldProps` with valid name string!');
-        }
-        if (process.env.NODE_ENV !== 'production') {
-          warning(
-            this.fieldsStore.isValidNestedFieldName(name),
-            'One field name cannot be part of another, e.g. `a` and `a.b`.'
-          );
-          warning(
-            !('exclusive' in usersFieldOption),
-            '`option.exclusive` of `getFieldProps`|`getFieldDecorator` had been remove.'
-          );
         }
 
         delete this.clearedFieldMetaCache[name];
@@ -207,6 +185,7 @@ export default function createForm(option = {}, mixins = []) {
 
 
         const fieldMeta = this.fieldsStore.getFieldMeta(name);
+        //第一次进入时，为 {}
         if ('initialValue' in fieldOption) {
           fieldMeta.initialValue = fieldOption.initialValue;
         }
@@ -215,6 +194,7 @@ export default function createForm(option = {}, mixins = []) {
           ...this.fieldsStore.getFieldValuePropValue(fieldOption),
           ref: this.getCacheBind(name, `${name}__ref`, this.saveRef),
         };
+
         if (fieldNameProp) {
           inputProps[fieldNameProp] = name;
         }
@@ -239,7 +219,9 @@ export default function createForm(option = {}, mixins = []) {
           ...fieldOption,
           validate: validateRules,
         };
+        // 设置FieldMeta
         this.fieldsStore.setFieldMeta(name, meta);
+
         if (fieldMetaProp) {
           inputProps[fieldMetaProp] = meta;
         }
@@ -314,6 +296,7 @@ export default function createForm(option = {}, mixins = []) {
         }
       }
 
+      //保存ref信息
       saveRef(name, _, component) {
         if (!component) {
           // after destroy, delete data
@@ -379,6 +362,7 @@ export default function createForm(option = {}, mixins = []) {
             this.fieldsStore.getFieldsValue(fieldNames));
           return;
         }
+        // 初始化验证规则
         const validator = new AsyncValidator(allRules);
         if (validateMessages) {
           validator.messages(validateMessages);
@@ -443,6 +427,7 @@ export default function createForm(option = {}, mixins = []) {
         const fieldNames = names ?
           this.fieldsStore.getValidFieldsFullName(names) :
           this.fieldsStore.getValidFieldsName();
+          console.log('这里开始验证。');
         const fields = fieldNames
           .filter(name => {
             const fieldMeta = this.fieldsStore.getFieldMeta(name);
@@ -471,24 +456,10 @@ export default function createForm(option = {}, mixins = []) {
       }
 
       isSubmitting() {
-        if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
-          warning(
-            false,
-            '`isSubmitting` is deprecated. ' +
-              'Actually, it\'s more convenient to handle submitting status by yourself.'
-          );
-        }
         return this.state.submitting;
       }
 
       submit(callback) {
-        if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
-          warning(
-            false,
-            '`submit` is deprecated.' +
-              'Actually, it\'s more convenient to handle submitting status by yourself.'
-          );
-        }
         const fn = () => {
           this.setState({
             submitting: false,

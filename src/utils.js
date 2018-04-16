@@ -10,7 +10,6 @@ export function argumentContainer(Container, WrappedComponent) {
   Container.displayName = `Form(${getDisplayName(WrappedComponent)})`;
   Container.WrappedComponent = WrappedComponent;
   var result =hoistStatics(Container, WrappedComponent);
-  console.log('result 是什么？');
   return result;
 }
 
@@ -89,6 +88,7 @@ export function getValidateTriggers(validateRules) {
     .reduce((pre, curr) => pre.concat(curr), []);
 }
 
+// 通过event获取表单值
 export function getValueFromEvent(e) {
   // To support custom element
   if (!e || !e.target) {
@@ -98,6 +98,7 @@ export function getValueFromEvent(e) {
   return target.type === 'checkbox' ? target.checked : target.value;
 }
 
+//返回多个错误信息，逗号隔开显示
 export function getErrorStrs(errors) {
   if (errors) {
     return errors.map((e) => {
@@ -140,10 +141,12 @@ export function getParams(ns, opt, cb) {
   };
 }
 
+// 是否为空对象
 export function isEmptyObject(obj) {
   return Object.keys(obj).length === 0;
 }
 
+//判断是否有验证
 export function hasRules(validate) {
   if (validate) {
     return validate.some((item) => {
@@ -153,6 +156,7 @@ export function hasRules(validate) {
   return false;
 }
 
+// 判断是否从字符串开头是否为prefix
 export function startsWith(str, prefix) {
   return str.lastIndexOf(prefix, 0) === 0;
 }

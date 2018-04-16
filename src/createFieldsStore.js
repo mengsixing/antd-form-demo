@@ -13,6 +13,7 @@ function partOf(a, b) {
 
 class FieldsStore {
   constructor(fields) {
+    console.log('被转换的fields',fields);
     this.fields = this.flattenFields(fields);
     this.fieldsMeta = {};
   }
@@ -65,7 +66,7 @@ class FieldsStore {
       const fieldMeta = this.getFieldMeta(f);
       if (fieldMeta && fieldMeta.normalize) {
         const nowValue =
-                fieldMeta.normalize(value, this.getValueFromFields(f, this.fields), nowValues);
+          fieldMeta.normalize(value, this.getValueFromFields(f, this.fields), nowValues);
         if (nowValue !== value) {
           nowFields[f] = {
             ...nowFields[f],
@@ -149,6 +150,7 @@ class FieldsStore {
     if (getValueProps) {
       return getValueProps(fieldValue);
     }
+    // { value:'123' }
     return { [valuePropName]: fieldValue };
   }
 
@@ -191,7 +193,7 @@ class FieldsStore {
     const fullNames = this.getValidFieldsFullName(name);
     if (
       fullNames.length === 0 || // Not registered
-        (fullNames.length === 1 && fullNames[0] === name) // Name already is full name.
+      (fullNames.length === 1 && fullNames[0] === name) // Name already is full name.
     ) {
       return getter(name);
     }

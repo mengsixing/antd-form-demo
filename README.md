@@ -1,6 +1,5 @@
 # antd-form-demo
 
-根据代码执行顺序梳理逻辑，这里列举简单例子，create时不穿任何参数
 
 ## 1、调用Form.create()(MyForm)
 
