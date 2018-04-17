@@ -44,6 +44,7 @@ export default function createForm(option = {}, mixins = []) {
         this.getFieldProps=this.getFieldProps.bind(this);
         this.getFieldDecorator=this.getFieldDecorator.bind(this);
         this.validateFields=this.validateFields.bind(this);
+        this.setFieldsValue=this.setFieldsValue.bind(this);
       }
       getForm() {
         return {
@@ -73,11 +74,15 @@ export default function createForm(option = {}, mixins = []) {
         if (fieldMeta[action]) {
           fieldMeta[action](...args);
         } else if (fieldMeta.originalProps && fieldMeta.originalProps[action]) {
+          // 执行自定义事件
           fieldMeta.originalProps[action](...args);
         }
+        // 获取表单中的值，默认value
         const value = fieldMeta.getValueFromEvent ?
           fieldMeta.getValueFromEvent(...args) :
           getValueFromEvent(...args);
+
+        // 自定义onValuesChange事件执行
         if (onValuesChange && value !== this.fieldsStore.getFieldValue(name)) {
           const valuesAll = this.fieldsStore.getAllValues();
           const valuesAllSet = {};
@@ -85,6 +90,7 @@ export default function createForm(option = {}, mixins = []) {
           Object.keys(valuesAll).forEach(key => set(valuesAllSet, key, valuesAll[key]));
           onValuesChange(this.props, set({}, name, value), valuesAllSet);
         }
+
         const field = this.fieldsStore.getField(name);
         return ({ name, field: { ...field, value, touched: true }, fieldMeta });
       }
@@ -104,11 +110,13 @@ export default function createForm(option = {}, mixins = []) {
       onCollectValidate(name_, action, ...args) {
         console.warn('change事件位置');
         const { field, fieldMeta } = this.onCollectCommon(name_, action, args);
+
         const newField = {
           ...field,
           dirty: true,
         };
         
+        // 验证
         this.validateFieldsInternal([newField], {
           action,
           options: {
@@ -140,6 +148,7 @@ export default function createForm(option = {}, mixins = []) {
       }
 
       getFieldDecorator(name, fieldOption) {
+        // 获取原始字段配置
         const props = this.getFieldProps(name, fieldOption);
         //props: {value: "", ref: ƒ, onChange: ƒ}
         return (fieldElem) => {
@@ -156,16 +165,12 @@ export default function createForm(option = {}, mixins = []) {
           fieldMeta.ref = fieldElem.ref;
           return React.cloneElement(fieldElem, {
             ...props,
-            ...this.fieldsStore.getFieldValuePropValue(fieldMeta),
+            ...this.fieldsStore.getFieldValuePropValue(fieldMeta),// { value:'123' }
           });
         };
       }
 
       getFieldProps(name, usersFieldOption = {}) {
-        if (!name) {
-          throw new Error('Must call `getFieldProps` with valid name string!');
-        }
-
         delete this.clearedFieldMetaCache[name];
 
         const fieldOption = {
@@ -183,7 +188,6 @@ export default function createForm(option = {}, mixins = []) {
           validate,
         } = fieldOption;
 
-
         const fieldMeta = this.fieldsStore.getFieldMeta(name);
         //第一次进入时，为 {}
         if ('initialValue' in fieldOption) {
@@ -199,7 +203,9 @@ export default function createForm(option = {}, mixins = []) {
           inputProps[fieldNameProp] = name;
         }
 
+        //转换成数组格式
         const validateRules = normalizeValidateRules(validate, rules, validateTrigger);
+        //validateRules [{"trigger":["onChange"],"rules":[{"required":true,"message":"What's your name?"}]}]
         const validateTriggers = getValidateTriggers(validateRules);
         validateTriggers.forEach((action) => {
           if (inputProps[action]) return;
@@ -207,7 +213,7 @@ export default function createForm(option = {}, mixins = []) {
           inputProps[action] = this.getCacheBind(name, action, this.onCollectValidate);
         });
 
-        // make sure that the value will be collect
+        // 默认事件
         if (trigger && validateTriggers.indexOf(trigger) === -1) {
           //绑定事件默认(onchange)
           inputProps[trigger] = this.getCacheBind(name, trigger, this.onCollect);
@@ -219,7 +225,7 @@ export default function createForm(option = {}, mixins = []) {
           ...fieldOption,
           validate: validateRules,
         };
-        // 设置FieldMeta
+        // 设置FieldMeta !!!
         this.fieldsStore.setFieldMeta(name, meta);
 
         if (fieldMetaProp) {
@@ -244,15 +250,22 @@ export default function createForm(option = {}, mixins = []) {
         return flattenArray(actionRules);
       }
 
+      // 设置属性值
       setFields(maybeNestedFields, callback) {
+        console.log('开始设置值');
         const fields = this.fieldsStore.flattenRegisteredFields(maybeNestedFields);
+        // 更新store中的值
         this.fieldsStore.setFields(fields);
+
+        // 执行自定义事件
         if (onFieldsChange) {
           const changedFields = Object.keys(fields)
             .reduce((acc, name) => set(acc, name, this.fieldsStore.getField(name)), {});
           onFieldsChange(this.props, changedFields, this.fieldsStore.getNestedAllFields());
         }
-        this.forceUpdate(callback);
+
+        //react方法，强制更新组件
+         this.forceUpdate(callback);
       }
 
       resetFields(ns) {
@@ -269,17 +282,12 @@ export default function createForm(option = {}, mixins = []) {
       }
 
       setFieldsValue(changedValues, callback) {
+        console.log('changedValues',changedValues);
         const { fieldsMeta } = this.fieldsStore;
         const values = this.fieldsStore.flattenRegisteredFields(changedValues);
         const newFields = Object.keys(values).reduce((acc, name) => {
           const isRegistered = fieldsMeta[name];
-          if (process.env.NODE_ENV !== 'production') {
-            warning(
-              isRegistered,
-              'Cannot use `setFieldsValue` until ' +
-                'you use `getFieldDecorator` or `getFieldProps` to register it.'
-            );
-          }
+          
           if (isRegistered) {
             const value = values[name];
             acc[name] = {
@@ -289,9 +297,10 @@ export default function createForm(option = {}, mixins = []) {
           return acc;
         }, {});
         this.setFields(newFields, callback);
+
+        // 有自定义事件
         if (onValuesChange) {
           const allValues = this.fieldsStore.getAllValues();
-          //更新所有组件
           onValuesChange(this.props, changedValues, allValues);
         }
       }
@@ -362,7 +371,7 @@ export default function createForm(option = {}, mixins = []) {
             this.fieldsStore.getFieldsValue(fieldNames));
           return;
         }
-        // 初始化验证规则
+        // 初始化验证，使用async-validator库
         const validator = new AsyncValidator(allRules);
         if (validateMessages) {
           validator.messages(validateMessages);

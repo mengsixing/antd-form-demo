@@ -36,7 +36,7 @@ class Form extends React.Component {
     console.log(this.props.form.getFieldValue('name2'));
   }
   xxx(){
-    console.log(this.props.form.getFieldValue('name2'));
+    this.props.form.setFieldsValue({name2:'哈哈'});
   }
 
   render() {

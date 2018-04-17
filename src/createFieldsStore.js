@@ -102,6 +102,7 @@ class FieldsStore {
     return this.fieldsMeta[name];
   }
 
+  // 获取表单值
   getValueFromFields(name, fields) {
     const field = fields[name];
     if (field && 'value' in field) {
@@ -190,6 +191,7 @@ class FieldsStore {
   }
 
   getNestedField(name, getter) {
+    console.log('获取表单值');
     const fullNames = this.getValidFieldsFullName(name);
     if (
       fullNames.length === 0 || // Not registered

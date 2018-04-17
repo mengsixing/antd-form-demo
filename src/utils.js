@@ -80,12 +80,11 @@ export function normalizeValidateRules(validate, rules, validateTrigger) {
   return validateRules;
 }
 
-//获取有验证属性的字段事件名，默认onChange
+//获取事件名，默认onChange，返回['onChange','onOther']...
 export function getValidateTriggers(validateRules) {
   return validateRules
-    .filter(item => !!item.rules && item.rules.length)
-    .map(item => item.trigger)
-    .reduce((pre, curr) => pre.concat(curr), []);
+  .filter(item => !!item.rules && item.rules.length)
+  .map(item => item.trigger).reduce((pre, curr) => pre.concat(curr), []);
 }
 
 // 通过event获取表单值
