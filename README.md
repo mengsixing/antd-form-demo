@@ -294,3 +294,5 @@ setFields(maybeNestedFields, callback) {
 ## 总结
 
 Form内部有一套自己的状态管理：fieldsStore,上面记录着所有表单项的信息，通过getFieldDecorator和表单进行双向绑定。
+
+![image](https://github.com/yhlben/antd-form-demo/createform.png)
