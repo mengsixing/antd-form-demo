@@ -34,7 +34,7 @@ class FieldsStore {
     const validFieldsName = this.getAllFieldsName();
     return flattenFields(
       fields,
-      path => validFieldsName.indexOf(path) >= 0,
+      path => validFieldsName.indexOf(path) >= 0, // isLeafNode
       'You cannot set field before registering it.'
     );
   }

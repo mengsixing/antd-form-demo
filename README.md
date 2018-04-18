@@ -1,54 +1,61 @@
 # antd-form-demo
 
+antd-form底层使用rc-form进行表单操作，这里主要分析rc-form流程。
 
-## 1、调用Form.create()(MyForm)
+## 调用Form.create()(MyForm)
 
-* 产生一个新容器组件Form，内置getFieldsValue等属性和方法。
+* 产生一个新容器组件Form，内置getFieldDecorator等属性和方法。
 * 复制被包裹组件的静态属性到新组建中。
+* 执行声明周期事件，主要是： getInitialState 初始化默认的field，这里默认无
+* render函数返回原始组件（被注入了Form组件的属性）。
+
 ``` js
 function createBaseForm(option = {}, mixins = []) {
+
+    mixins = {
+        getForm() {
+            return {
+                getFieldsValue: this.fieldsStore.getFieldsValue,
+                setFieldsValue: this.setFieldsValue,
+                getFieldDecorator: this.getFieldDecorator,
+                validateFields: this.validateFields,
+                // ...其他方法
+            };
+        }
+    }
   
-  return function decorate(WrappedComponent) {
+    return function decorate(WrappedComponent) {
     const Form = createReactClass({
-      mixins,
-      // 其他内置函数
-      render() {
-        // ...
-      }
+        mixins,
+        // 其他内置函数
+        render() {
+        const { wrappedComponentRef, ...restProps } = this.props;
+        const formProps = {
+            [formPropName]: this.getForm(), //从mixin引入的 在createDOMForm中
+        };
+        const props = mapProps.call(this, {
+            ...formProps,
+            ...restProps,
+        });
+        //把form属性挂在到WrappedComponent属性上
+        return <WrappedComponent {...props} />;
+        }
     });
 
     //复制包裹组件的静态属性到Form上
     return argumentContainer(Form, WrappedComponent);
-  };
-}
-
-```
-
-## 2、新组件Form的render
-
-* 执行声明周期事件，主要是： getInitialState 初始化默认的field，这里默认无
-* render函数之间返回被包裹的元素，但是被注入了Form组件的属性
-
-``` js
-render() {
-    const { wrappedComponentRef, ...restProps } = this.props;
-    const formProps = {
-        [formPropName]: this.getForm(), //从mixin引入的 在createDOMForm中
     };
-    const props = mapProps.call(this, {
-        ...formProps,
-        ...restProps,
-    });
-    //把form属性挂在到WrappedComponent属性上
-    return <WrappedComponent {...props} />;
 }
+
 ```
 
-----
+## 使用getFieldDecorator绑定表单项
 
-接下来进行表单项的绑定。
-
-## 3、使用getFieldDecorator绑定表单项
+* 创建表单信息到fieldsStore
+* 绑定默认onChange事件
+    * 触发验证
+    * 保存结果到fieldsStore
+* 返回双向数据绑定的input组件
 
 ``` js
 {getFieldDecorator('userName', {
@@ -58,15 +65,8 @@ render() {
 )}
 ```
 
-getFieldDecorator需要传递如下参数：
-* 字段名
-* 字段描述信息，如验证信息rules
-* 存储字段相关信息：fieldsStore[字段名]={rules：{},value:{},onChange(){}}
-* onChange事件会自动触发验证条件。
-* 返回一个高阶函数，需要传递input进行绑定。
-
+### 创建表单信息到fieldsStore,绑定默认onChange事件
 ``` js
-
 getFieldDecorator(name, fieldOption) {
     //初始化store字段，绑定onChange事件
     const props = this.getFieldProps(name, fieldOption);
@@ -74,28 +74,16 @@ getFieldDecorator(name, fieldOption) {
 
     //接收传入input
     return (fieldElem) => {
+        // 获取原有的表单项信息，如果没有就创建一个新的。
         const fieldMeta = this.fieldsStore.getFieldMeta(name);
-        const originalProps = fieldElem.props;
-        fieldMeta.originalProps = originalProps;
-        fieldMeta.ref = fieldElem.ref;
 
-        // 克隆传入的input组件，注入
+        // 克隆传入的input组件，注入新属性，包括onChange，value等
         return React.cloneElement(fieldElem, {
         ...props,
         ...this.fieldsStore.getFieldValuePropValue(fieldMeta),// { value:'123' }
         });
     };
 }
-
-```
-
-
-## 4、传入input组件
-
-* 给组件注入属性，例如：onChange事件等
-* 双向绑定完成，更改字段会同时改变fieldsStore[字段名]中的值。
-
-``` js
 
 getFieldProps(name, usersFieldOption = {}) {
     const fieldOption = {
@@ -136,19 +124,25 @@ getFieldProps(name, usersFieldOption = {}) {
         ...fieldOption,
         validate: validateRules,
     };
+
     // 设置FieldMeta !!!
     this.fieldsStore.setFieldMeta(name, meta);
 
     return inputProps;
 }
+```
+
+
+
+
+### 触发验证,保存结果到fieldsStore
+``` js
 
 onCollectValidate(name_, action, ...args) {
-    console.warn('change事件');
     const { field, fieldMeta } = this.onCollectCommon(name_, action, args);
-    
     const newField = {
         ...field,
-        dirty: true,
+        dirty: true,  // 需要验证
     };
     
     // 验证
@@ -160,47 +154,65 @@ onCollectValidate(name_, action, ...args) {
     });
 }
 
+onCollectCommon(name, action, args) {
+    const fieldMeta = this.fieldsStore.getFieldMeta(name);
 
-validateFieldsInternal(fields, {fieldNames,action,options = {},}, callback) {
+    // 执行表单的onChange事件
+    if (fieldMeta[action]) {
+        fieldMeta[action](...args);
+    } else if (fieldMeta.originalProps && fieldMeta.originalProps[action]) {
+        fieldMeta.originalProps[action](...args);
+    }
+    
+    // 获取表单中的值，默认value
+    const value = fieldMeta.getValueFromEvent ?
+        fieldMeta.getValueFromEvent(...args) :
+        getValueFromEvent(...args);
+
+    const field = this.fieldsStore.getField(name);
+    return ({ name, field: { ...field, value, touched: true }, fieldMeta });
+}
+
+
+validateFieldsInternal(fields, {fieldNames,action,options = {}}, callback) {
     const allRules = {};
     const allValues = {};
     const allFields = {};
     const alreadyErrors = {};
     fields.forEach((field) => {
         const name = field.name;
+        // 不需要验证逻辑
         if (options.force !== true && field.dirty === false) {
         if (field.errors) {
             set(alreadyErrors, name, { errors: field.errors });
         }
-        return;
+            return;
         }
+
         const fieldMeta = this.fieldsStore.getFieldMeta(name);
         const newField = {
         ...field,
         };
         newField.errors = undefined;
-        newField.validating = true;
-        newField.dirty = true;
+        newField.validating = true; // 正在验证状态
+        newField.dirty = true; // 表示需要验证
         allRules[name] = this.getRules(fieldMeta, action);
         allValues[name] = newField.value;
         allFields[name] = newField;
     });
+    // {"name2":{"name":"name2","value":"","touched":true,"dirty":true,"validating":true}}
     this.setFields(allFields);
-    // in case normalize
+
     Object.keys(allValues).forEach((f) => {
         allValues[f] = this.fieldsStore.getFieldValue(f);
     });
-    if (callback && isEmptyObject(allFields)) {
-        callback(isEmptyObject(alreadyErrors) ? null : alreadyErrors,
-        this.fieldsStore.getFieldsValue(fieldNames));
-        return;
-    }
+    
     // 初始化验证，使用async-validator库
     const validator = new AsyncValidator(allRules);
     if (validateMessages) {
         validator.messages(validateMessages);
     }
-    //验证rule，使用第三方库async-validator
+    //验证rule
     validator.validate(allValues, options, (errors) => {
         const errorsGroup = {
         ...alreadyErrors,
@@ -216,39 +228,20 @@ validateFieldsInternal(fields, {fieldNames,action,options = {},}, callback) {
             fieldErrors.push(e);
         });
         }
-        const expired = [];
         const nowAllFields = {};
         Object.keys(allRules).forEach((name) => {
         const fieldErrors = get(errorsGroup, name);
         const nowField = this.fieldsStore.getField(name);
-        // avoid concurrency problems
-        if (nowField.value !== allValues[name]) {
-            expired.push({
-            name,
-            });
-        } else {
-            nowField.errors = fieldErrors && fieldErrors.errors;
-            nowField.value = allValues[name];
-            nowField.validating = false;
-            nowField.dirty = false;
-            nowAllFields[name] = nowField;
-        }
+        // 验证完成
+        nowField.errors = fieldErrors && fieldErrors.errors;
+        nowField.value = allValues[name];
+        nowField.validating = false;
+        nowField.dirty = false;
+        nowAllFields[name] = nowField;
         });
+        // {"name2":{"name":"name2","value":"","touched":true,"dirty":false,"errors":[{"message":"What's your name?","field":"name2"}],"validating":false}}
         this.setFields(nowAllFields);
         if (callback) {
-        if (expired.length) {
-            expired.forEach(({ name }) => {
-            const fieldErrors = [{
-                message: `${name} need to revalidate`,
-                field: name,
-            }];
-            set(errorsGroup, name, {
-                expired: true,
-                errors: fieldErrors,
-            });
-            });
-        }
-
         callback(isEmptyObject(errorsGroup) ? null : errorsGroup,
             this.fieldsStore.getFieldsValue(fieldNames));
         }
@@ -263,7 +256,9 @@ validateFieldsInternal(fields, {fieldNames,action,options = {},}, callback) {
 
 setFieldsValue(changedValues, callback) {
     const { fieldsMeta } = this.fieldsStore;
+    // 过滤fieldsStore中没有的字段
     const values = this.fieldsStore.flattenRegisteredFields(changedValues);
+
     const newFields = Object.keys(values).reduce((acc, name) => {
         const isRegistered = fieldsMeta[name];
         if (isRegistered) {

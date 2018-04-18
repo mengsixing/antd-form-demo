@@ -71,6 +71,7 @@ export default function createForm(option = {}, mixins = []) {
 
       onCollectCommon(name, action, args) {
         const fieldMeta = this.fieldsStore.getFieldMeta(name);
+        console.log('执行事件。。。。。。');
         if (fieldMeta[action]) {
           fieldMeta[action](...args);
         } else if (fieldMeta.originalProps && fieldMeta.originalProps[action]) {
@@ -285,6 +286,7 @@ export default function createForm(option = {}, mixins = []) {
         console.log('changedValues',changedValues);
         const { fieldsMeta } = this.fieldsStore;
         const values = this.fieldsStore.flattenRegisteredFields(changedValues);
+        console.log('转换后的',values);
         const newFields = Object.keys(values).reduce((acc, name) => {
           const isRegistered = fieldsMeta[name];
           
@@ -344,25 +346,30 @@ export default function createForm(option = {}, mixins = []) {
         console.log('把新值传到这里来');
         fields.forEach((field) => {
           const name = field.name;
+
+          // 不需要验证逻辑
           if (options.force !== true && field.dirty === false) {
             if (field.errors) {
               set(alreadyErrors, name, { errors: field.errors });
             }
             return;
           }
+
           const fieldMeta = this.fieldsStore.getFieldMeta(name);
           const newField = {
             ...field,
           };
           newField.errors = undefined;
-          newField.validating = true;
-          newField.dirty = true;
+          newField.validating = true; // 正在验证状态
+          newField.dirty = true; // 表示需要验证
           allRules[name] = this.getRules(fieldMeta, action);
           allValues[name] = newField.value;
           allFields[name] = newField;
         });
+        console.log('设置field',JSON.stringify(allFields));
+        // {"name2":{"name":"name2","value":"","touched":true,"dirty":true,"validating":true}}
         this.setFields(allFields);
-        // in case normalize
+
         Object.keys(allValues).forEach((f) => {
           allValues[f] = this.fieldsStore.getFieldValue(f);
         });
@@ -403,6 +410,7 @@ export default function createForm(option = {}, mixins = []) {
                 name,
               });
             } else {
+              // 验证完成
               nowField.errors = fieldErrors && fieldErrors.errors;
               nowField.value = allValues[name];
               nowField.validating = false;
@@ -410,6 +418,8 @@ export default function createForm(option = {}, mixins = []) {
               nowAllFields[name] = nowField;
             }
           });
+          console.log('again设置field',JSON.stringify(nowAllFields));
+          // {"name2":{"name":"name2","value":"","touched":true,"dirty":false,"errors":[{"message":"What's your name?","field":"name2"}],"validating":false}}
           this.setFields(nowAllFields);
           if (callback) {
             if (expired.length) {
